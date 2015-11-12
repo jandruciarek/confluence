@@ -1,4 +1,4 @@
-FROM jandruciarek/jre-oracle:latest
+FROM idmar/jdk-oracle:1.8.0_66 
 
 # Setup useful environment variables
 ENV CONF_HOME     /var/local/atlassian/confluence
@@ -10,22 +10,24 @@ ENV CONF_VERSION  5.8.16
 RUN set -x \
     && apt-get update --quiet \
     && apt-get install --quiet --yes --no-install-recommends libtcnative-1 xmlstarlet \
-    && apt-get clean \
-    && mkdir -p                "${CONF_HOME}" \
+    && apt-get clean 
+
+RUN mkdir -p                "${CONF_HOME}" \
     && chmod -R 700            "${CONF_HOME}" \
-    && chown daemon:daemon     "${CONF_HOME}" \
+    && chown root:root         "${CONF_HOME}" \
     && mkdir -p                "${CONF_INSTALL}/conf" \
     && wget -O "/tmp/atlassian-confluence-${CONF_VERSION}.tar.gz" "http://www.atlassian.com/software/confluence/downloads/binary/atlassian-confluence-${CONF_VERSION}.tar.gz" \
     && mkdir -p		       "${CONF_INSTALL}" \
     && tar -xvzf               "/tmp/atlassian-confluence-${CONF_VERSION}.tar.gz" --directory "${CONF_INSTALL}" --strip-components=1 --no-same-owner \
+    && rm -fR                  "/tmp" \
     && chmod -R 700            "${CONF_INSTALL}/conf" \
     && chmod -R 700            "${CONF_INSTALL}/temp" \
     && chmod -R 700            "${CONF_INSTALL}/logs" \
     && chmod -R 700            "${CONF_INSTALL}/work" \
-    && chown -R daemon:daemon  "${CONF_INSTALL}/conf" \
-    && chown -R daemon:daemon  "${CONF_INSTALL}/temp" \
-    && chown -R daemon:daemon  "${CONF_INSTALL}/logs" \
-    && chown -R daemon:daemon  "${CONF_INSTALL}/work" \
+    && chown -R root:root      "${CONF_INSTALL}/conf" \
+    && chown -R root:root      "${CONF_INSTALL}/temp" \
+    && chown -R root:root      "${CONF_INSTALL}/logs" \
+    && chown -R root:root      "${CONF_INSTALL}/work" \
     && echo -e                 "\nconfluence.home=$CONF_HOME" >> "${CONF_INSTALL}/confluence/WEB-INF/classes/confluence-init.properties" \
     && xmlstarlet              ed --inplace \
         --delete               "Server/@debug" \
@@ -41,7 +43,7 @@ RUN set -x \
 # Use the default unprivileged account. This could be considered bad practice
 # on systems where multiple processes end up being executed by 'daemon' but
 # here we only ever run one process anyway.
-USER daemon:daemon
+USER root:root
 
 # Expose default HTTP connector port.
 EXPOSE 8090
@@ -49,7 +51,7 @@ EXPOSE 8090
 # Set volume mount points for installation and home directory. Changes to the
 # home directory needs to be persisted as well as parts of the installation
 # directory due to eg. logs.
-VOLUME ["/var/local/atlassian/confluence"]
+VOLUME ["/var/local/atlassian/confluence", "/usr/local/atlassian/confluence/logs"]
 
 # Set the default working directory as the Confluence home directory.
 WORKDIR ${CONF_HOME}
